@@ -1,1493 +1,1561 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureMed - Personal Medical Tracker</title>
-    <!-- Tailwind CSS -->
+    <title>SecureMed - Personal Medical Data Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js for interactive charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Font Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    colors: {
+                        medical: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
                 }
             }
         }
     </script>
 </head>
-<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased flex flex-col selection:bg-teal-500 selection:text-white">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <!-- Top Warning Banner (Encouraging Dummy Data) -->
-    <div id="dummy-warning-banner" class="bg-amber-500/10 border-b border-amber-500/30 px-4 py-3 text-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm z-50">
-        <div class="flex items-center gap-3 text-center sm:text-left">
-            <div class="bg-amber-500/20 p-2 rounded-lg text-amber-400 shrink-0">
-                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-            </div>
-            <div>
-                <span class="font-semibold text-amber-300">Learning Project Notice:</span> 
-                <span>This is a secure-looking personal medical tracker simulation. Please use <strong class="underline decoration-amber-400/50">DUMMY DATA ONLY</strong> and never enter real sensitive personal health information.</span>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <button onclick="loadDummyData()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Load Dummy Data
-            </button>
-            <button onclick="dismissWarning()" class="text-amber-300/70 hover:text-amber-200 p-1.5 rounded-lg text-xs transition">
-                <i class="fa-solid fa-xmark text-base"></i>
-            </button>
-        </div>
+    <!-- Warning Banner -->
+    <div class="bg-amber-500 text-slate-950 px-4 py-2 text-xs sm:text-sm font-semibold text-center flex items-center justify-center gap-2 shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>LEARNING PROJECT NOTICE: Please use DUMMY DATA only. Do not enter real personal health information.</span>
+        <button onclick="loadDummyData()" class="ml-2 bg-slate-950 text-white px-2 py-0.5 rounded text-xs hover:bg-slate-800 transition shadow">
+            Load Dummy Data
+        </button>
     </div>
 
-    <!-- Custom Modal Container -->
-    <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <div id="modal-icon" class="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center text-xl mb-4">
-                <i class="fa-solid fa-circle-info"></i>
+    <!-- Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showSection('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-medical-600 text-white flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-heart-pulse text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">SecureMed</h1>
+                    <p class="text-xs text-slate-500">Personal Medical Tracker</p>
+                </div>
             </div>
-            <h3 id="modal-title" class="text-lg font-bold text-white mb-2">Notice</h3>
-            <p id="modal-message" class="text-slate-300 text-sm mb-6 leading-relaxed">Message content goes here.</p>
-            <div id="modal-actions" class="flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition cursor-pointer">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Auth Wrapper (Login / Register) -->
-    <div id="auth-view" class="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div class="max-w-md w-full bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div class="text-center mb-8 relative z-10">
-                <div class="w-14 h-14 bg-teal-500/20 border border-teal-500/30 rounded-2xl flex items-center justify-center text-teal-400 text-2xl mx-auto mb-4 shadow-inner">
-                    <i class="fa-solid fa-shield-heart"></i>
-                </div>
-                <h1 class="text-2xl font-bold tracking-tight text-white">SecureMed Vault</h1>
-                <p class="text-sm text-slate-400 mt-1">Simulated encrypted personal health tracking</p>
-            </div>
-
-            <!-- Tabs: Login / Register -->
-            <div class="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800 relative z-10">
-                <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 py-2 text-xs font-semibold rounded-lg transition bg-teal-500 text-slate-950 shadow">Sign In</button>
-                <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-2 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">Create Account</button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4 relative z-10">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-regular fa-envelope"></i></span>
-                        <input type="email" id="login-email" required placeholder="patient@example.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 transition">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Passcode / Password</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-lock"></i></span>
-                        <input type="password" id="login-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 transition">
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer mt-2">
-                    <span>Unlock Vault</span>
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                </button>
-            </form>
-
-            <!-- Register Form -->
-            <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden relative z-10">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Full Name (Dummy)</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-regular fa-user"></i></span>
-                        <input type="text" id="reg-name" required placeholder="John Doe" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 transition">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-regular fa-envelope"></i></span>
-                        <input type="email" id="reg-email" required placeholder="patient@example.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 transition">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Passcode / Password</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-lock"></i></span>
-                        <input type="password" id="reg-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 transition">
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer mt-2">
-                    <span>Create Simulated Account</span>
-                    <i class="fa-solid fa-user-plus text-xs"></i>
-                </button>
-            </form>
-
-            <div class="mt-6 pt-6 border-t border-slate-800/80 text-center relative z-10">
-                <button onclick="loadDummyDataAndLogin()" class="text-xs text-teal-400 hover:text-teal-300 font-medium inline-flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-bolt"></i> Quick Demo Login with Sample Dummy Data
+            
+            <div id="authNavControls" class="flex items-center gap-3">
+                <span id="userStatusBadge" class="hidden text-xs px-2.5 py-1 bg-medical-50 text-medical-700 font-medium rounded-full border border-medical-200">
+                    <i class="fa-solid fa-shield-halved mr-1"></i> <span id="navUsername">User</span>
+                </span>
+                <button id="navAuthBtn" onclick="openAuthModal()" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In / Register
                 </button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Main Dashboard View (Hidden by Default) -->
-    <div id="dashboard-view" class="flex-1 flex flex-col hidden h-full overflow-hidden">
-        <!-- Header Navigation -->
-        <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-teal-500/20 border border-teal-500/30 rounded-xl flex items-center justify-center text-teal-400 text-lg shadow-inner">
-                    <i class="fa-solid fa-shield-heart"></i>
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Not Logged In State / Welcome Hero -->
+        <div id="welcomeHero" class="bg-gradient-to-br from-medical-900 to-medical-800 rounded-2xl text-white p-8 sm:p-12 shadow-xl mb-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="max-w-xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-medical-700/60 text-medical-100 text-xs font-semibold mb-4 border border-medical-500/30">
+                    <i class="fa-solid fa-graduation-cap"></i> Educational Security Demo
                 </div>
-                <div>
-                    <h2 class="font-bold text-white text-base tracking-tight flex items-center gap-2">
-                        <span>SecureMed</span>
-                        <span class="text-[10px] bg-teal-500/10 text-teal-400 border border-teal-500/20 px-2 py-0.5 rounded-full font-medium">Encrypted Simulation</span>
-                    </h2>
-                    <p class="text-xs text-slate-400" id="user-display-name">Welcome, Patient</p>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">Manage Your Medical Data Securely</h2>
+                <p class="text-medical-100 text-sm sm:text-base leading-relaxed mb-6">
+                    Keep track of prescriptions, refill reminders, blood pressure readings, upcoming doctor visits, and personal health ideas. Test administrator logons and recovery workflows safely.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="openAuthModal()" class="bg-white text-medical-900 font-semibold px-6 py-3 rounded-xl shadow hover:bg-slate-100 transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-user-shield text-medical-700"></i> Get Started / Sign In
+                    </button>
+                    <button onclick="loadDummyData()" class="bg-medical-700/80 hover:bg-medical-700 text-white font-medium px-5 py-3 rounded-xl transition border border-medical-500/40 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-database"></i> Explore with Dummy Data
+                    </button>
                 </div>
             </div>
-
-            <div class="flex items-center gap-3">
-                <button onclick="loadDummyData()" class="hidden sm:flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 px-3 py-2 rounded-xl transition border border-slate-700/50 cursor-pointer">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Refresh Dummy Data
-                </button>
-                <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
-                <button onclick="handleLogout()" class="flex items-center gap-2 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-xl transition border border-red-500/20 cursor-pointer">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span class="hidden sm:inline">Lock Vault</span>
+            <div class="w-full md:w-auto bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center shadow-inner max-w-sm">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Demo Admin Credentials</h3>
+                <p class="text-xs text-medical-100 mb-4">Quick test account for administrator role privileges:</p>
+                <div class="bg-black/30 p-3 rounded-lg text-xs font-mono text-left mb-4">
+                    <div>Username: <span class="text-medical-300 font-bold">administrator</span></div>
+                    <div>Password: <span class="text-medical-300 font-bold">1234</span></div>
+                </div>
+                <button onclick="quickAdminLogin()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold py-2 px-4 rounded-lg text-xs transition shadow">
+                    Quick Admin Login
                 </button>
             </div>
-        </header>
+        </div>
 
-        <!-- Main Workspace Layout -->
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Sidebar Navigation -->
-            <aside class="w-16 sm:w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
-                <nav class="p-2 sm:p-4 space-y-1.5 flex-1">
-                    <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-teal-500/10 text-teal-400 border border-teal-500/20 cursor-pointer">
-                        <i class="fa-solid fa-house-chimney w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Overview & Reminders</span>
-                    </button>
-                    <button onclick="switchTab('prescriptions')" id="nav-prescriptions" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer">
-                        <i class="fa-solid fa-pills w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Prescriptions & Refills</span>
-                    </button>
-                    <button onclick="switchTab('vitals')" id="nav-vitals" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer">
-                        <i class="fa-solid fa-chart-line w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Blood Pressure Tracker</span>
-                    </button>
-                    <button onclick="switchTab('appointments')" id="nav-appointments" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer">
-                        <i class="fa-solid fa-calendar-check w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Doctor Appointments</span>
-                    </button>
-                    <button onclick="switchTab('contacts')" id="nav-contacts" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer">
-                        <i class="fa-solid fa-address-book w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Emergency & Contacts</span>
-                    </button>
-                    <button onclick="switchTab('notes')" id="nav-notes" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer">
-                        <i class="fa-solid fa-note-sticky w-5 text-center text-base"></i>
-                        <span class="hidden sm:inline">Health Notes & Ideas</span>
-                    </button>
-                </nav>
-                <div class="p-4 border-t border-slate-900 hidden sm:block">
-                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-400">
-                        <p class="font-semibold text-slate-300 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-lock text-teal-400"></i> Local Storage</p>
-                        <p class="text-[11px] leading-relaxed">Your simulated records persist securely in your browser's local cache.</p>
+        <!-- Dashboard App View (Hidden until login / demo load) -->
+        <div id="appDashboard" class="hidden space-y-6">
+            
+            <!-- Dashboard Subheader & Tabs -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div id="roleBadgeContainer" class="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-slate-300">
+                        <i class="fa-solid fa-user"></i> <span id="displayRoleName">Standard User</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Welcome back, <span id="displayNameHeader">User</span>!</h3>
+                        <p class="text-xs text-slate-500">Last login: <span id="lastLoginTime">Just now</span></p>
                     </div>
                 </div>
-            </aside>
-
-            <!-- Content Area -->
-            <main class="flex-1 overflow-y-auto bg-slate-900 p-4 sm:p-8">
                 
-                <!-- TAB 1: OVERVIEW -->
-                <div id="tab-content-overview" class="space-y-6 max-w-6xl mx-auto">
-                    <!-- Welcome & Quick Stats -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Prescriptions</span>
-                                <div class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center"><i class="fa-solid fa-pills"></i></div>
-                            </div>
-                            <div class="text-2xl font-bold text-white" id="stat-active-rx">0</div>
-                            <p class="text-xs text-slate-500 mt-1">Requires daily take reminders</p>
+                <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+                    <button onclick="switchTab('overview')" id="tabBtn-overview" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-medical-600 text-white shadow-sm transition">
+                        <i class="fa-solid fa-chart-pie mr-1.5"></i> Overview
+                    </button>
+                    <button onclick="switchTab('prescriptions')" id="tabBtn-prescriptions" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-pills mr-1.5"></i> Prescriptions
+                    </button>
+                    <button onclick="switchTab('vitals')" id="tabBtn-vitals" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-heart-pulse mr-1.5"></i> Blood Pressure
+                    </button>
+                    <button onclick="switchTab('appointments')" id="tabBtn-appointments" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-calendar-check mr-1.5"></i> Appointments
+                    </button>
+                    <button onclick="switchTab('notes')" id="tabBtn-notes" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-notes-medical mr-1.5"></i> Health Notes
+                    </button>
+                    <button onclick="switchTab('security')" id="tabBtn-security" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-shield-keyhole mr-1.5"></i> Recovery Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tabContent-overview" class="tab-content space-y-6">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Active Prescriptions</p>
+                            <h4 class="text-2xl font-bold text-slate-900 mt-1" id="statRxCount">0</h4>
                         </div>
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Upcoming Refills</span>
-                                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            </div>
-                            <div class="text-2xl font-bold text-white" id="stat-refills">0</div>
-                            <p class="text-xs text-slate-500 mt-1">Low pill counts remaining</p>
-                        </div>
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Next Appointment</span>
-                                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div>
-                            </div>
-                            <div class="text-lg font-bold text-white truncate" id="stat-next-app">None Scheduled</div>
-                            <p class="text-xs text-slate-500 mt-1" id="stat-next-app-date">Check calendar for details</p>
-                        </div>
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Latest BP Reading</span>
-                                <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center"><i class="fa-solid fa-heart-pulse"></i></div>
-                            </div>
-                            <div class="text-2xl font-bold text-white" id="stat-latest-bp">--/--</div>
-                            <p class="text-xs text-slate-500 mt-1" id="stat-bp-status">No records logged</p>
+                        <div class="w-12 h-12 bg-medical-50 text-medical-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-prescription-bottle-medical"></i>
                         </div>
                     </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Low Supply Refills</p>
+                            <h4 class="text-2xl font-bold text-amber-600 mt-1" id="statRefillCount">0</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Next Appointment</p>
+                            <h4 class="text-lg font-bold text-slate-900 mt-1 truncate max-w-[180px]" id="statNextAppt">None</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-calendar-days"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Latest BP Reading</p>
+                            <h4 class="text-2xl font-bold text-slate-900 mt-1" id="statLatestBP">--/--</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Daily Reminders Queue -->
-                    <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+                <!-- Quick Action Reminders & Summary -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Daily Med Reminders -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="font-bold text-white text-base">Today's Medication & Refill Checklist</h3>
-                                <p class="text-xs text-slate-400">Keep track of doses taken and pending prescription refills</p>
-                            </div>
-                            <span class="text-xs bg-slate-900 border border-slate-800 text-teal-400 px-3 py-1 rounded-full font-medium" id="today-date-str">Today</span>
+                            <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-medical-600"></i> Medication & Refill Reminders
+                            </h4>
+                            <span class="text-xs bg-medical-50 text-medical-700 px-2.5 py-1 rounded-full font-medium">Today</span>
                         </div>
-                        <div id="overview-reminders-list" class="space-y-3">
-                            <!-- Populated via JS -->
+                        <div id="remindersList" class="space-y-3">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
 
-                    <!-- Quick Health Notes Preview & Actions -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-center justify-between mb-3">
-                                    <h3 class="font-bold text-white text-base flex items-center gap-2">
-                                        <i class="fa-solid fa-note-sticky text-teal-400"></i> Recent Health Notes
-                                    </h3>
-                                    <button onclick="switchTab('notes')" class="text-xs text-teal-400 hover:underline">View All</button>
-                                </div>
-                                <div id="overview-notes-preview" class="space-y-2 mb-4">
-                                    <!-- Populated via JS -->
-                                </div>
+                    <!-- Quick Health Notes / Ideas -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-lightbulb text-amber-500"></i> Quick Health Note / Idea Pad
+                                </h4>
+                                <button onclick="switchTab('notes')" class="text-xs text-medical-600 font-semibold hover:underline">View All</button>
                             </div>
-                            <div class="pt-4 border-t border-slate-900">
-                                <div class="flex gap-2">
-                                    <input type="text" id="quick-note-input" placeholder="Jot down a quick symptom or question..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500">
-                                    <button onclick="addQuickNote()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">Add</button>
-                                </div>
-                            </div>
+                            <p class="text-xs text-slate-500 mb-3">Jot down questions for your next doctor visit or sudden symptoms as you think of them.</p>
+                            <textarea id="quickNoteInput" rows="3" placeholder="e.g., Ask Dr. Smith about mild dizziness after morning medication..." class="w-full p-3 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none"></textarea>
                         </div>
-
-                        <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-                            <div>
-                                <h3 class="font-bold text-white text-base mb-1 flex items-center gap-2">
-                                    <i class="fa-solid fa-address-book text-indigo-400"></i> Primary Emergency Contact
-                                </h3>
-                                <p class="text-xs text-slate-400 mb-4">Quick access for urgent medical situations</p>
-                                <div id="overview-primary-contact" class="bg-slate-900 border border-slate-800/80 rounded-xl p-4">
-                                    <!-- Populated via JS -->
-                                </div>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-slate-900 flex justify-end">
-                                <button onclick="switchTab('contacts')" class="text-xs text-indigo-400 hover:underline font-medium">Manage All Doctors & Contacts →</button>
-                            </div>
+                        <div class="mt-3 flex justify-end">
+                            <button onclick="saveQuickNote()" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-plus mr-1"></i> Add Note
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- TAB 2: PRESCRIPTIONS -->
-                <div id="tab-content-prescriptions" class="space-y-6 max-w-6xl mx-auto hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <!-- TAB 2: PRESCRIPTIONS -->
+            <div id="tabContent-prescriptions" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
-                            <h2 class="text-xl font-bold text-white">Prescriptions & Refill Reminders</h2>
-                            <p class="text-xs text-slate-400">Track dosage, frequency, and pill supply count for refills</p>
+                            <h4 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-prescription text-medical-600"></i> Prescriptions & Refill Tracker
+                            </h4>
+                            <p class="text-xs text-slate-500">Manage your active medications, dosages, schedules, and supply quantities.</p>
                         </div>
-                        <button onclick="openPrescriptionModal()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-plus text-xs"></i> Add Prescription
+                        <button onclick="openPrescriptionModal()" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Add Prescription
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="prescriptions-grid">
-                        <!-- Populated via JS -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
+                                    <th class="py-3 px-4 font-semibold">Medication</th>
+                                    <th class="py-3 px-4 font-semibold">Dosage</th>
+                                    <th class="py-3 px-4 font-semibold">Frequency</th>
+                                    <th class="py-3 px-4 font-semibold">Pills Remaining</th>
+                                    <th class="py-3 px-4 font-semibold">Pharmacy / Doctor</th>
+                                    <th class="py-3 px-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prescriptionsTableBody" class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </div>
 
-                <!-- TAB 3: VITALS (BLOOD PRESSURE) -->
-                <div id="tab-content-vitals" class="space-y-6 max-w-6xl mx-auto hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <!-- TAB 3: BLOOD PRESSURE / VITALS -->
+            <div id="tabContent-vitals" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Chart Section -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                         <div>
-                            <h2 class="text-xl font-bold text-white">Blood Pressure Tracker</h2>
-                            <p class="text-xs text-slate-400">Log systolic/diastolic readings and monitor trends over time</p>
+                            <h4 class="font-bold text-slate-900 text-lg flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-chart-line text-rose-600"></i> Blood Pressure Trends
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-4">Systolic (mmHg) vs Diastolic (mmHg) over recent logs.</p>
                         </div>
-                        <button onclick="openVitalsModal()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-plus text-xs"></i> Log BP Reading
-                        </button>
-                    </div>
-
-                    <!-- Interactive Chart Card -->
-                    <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="font-bold text-white text-base">Blood Pressure Trends (mmHg)</h3>
-                            <div class="flex items-center gap-4 text-xs">
-                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-teal-500 inline-block"></span> Systolic</span>
-                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-indigo-500 inline-block"></span> Diastolic</span>
-                            </div>
-                        </div>
-                        <div class="h-72 w-full relative">
+                        <div class="h-64 sm:h-80 w-full">
                             <canvas id="bpChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Readings History Table -->
-                    <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl overflow-hidden">
-                        <h3 class="font-bold text-white text-base mb-4">Reading History</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
-                                    <tr>
-                                        <th class="pb-3 font-semibold">Date & Time</th>
-                                        <th class="pb-3 font-semibold">Systolic (mmHg)</th>
-                                        <th class="pb-3 font-semibold">Diastolic (mmHg)</th>
-                                        <th class="pb-3 font-semibold">Pulse (bpm)</th>
-                                        <th class="pb-3 font-semibold">Category</th>
-                                        <th class="pb-3 font-semibold text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="vitals-table-body" class="divide-y divide-slate-900 text-slate-300">
-                                    <!-- Populated via JS -->
-                                </tbody>
-                            </table>
-                        </div>
+                    <!-- Add BP Form -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-slate-900 text-lg mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-heart-pulse text-rose-600"></i> Log Reading
+                        </h4>
+                        <p class="text-xs text-slate-500 mb-4">Record your current blood pressure numbers.</p>
+                        
+                        <form id="bpForm" onsubmit="handleSaveBP(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Systolic (Upper)</label>
+                                <input type="number" id="bpSystolic" required placeholder="120" min="60" max="250" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Diastolic (Lower)</label>
+                                <input type="number" id="bpDiastolic" required placeholder="80" min="40" max="150" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Pulse (bpm) - Optional</label>
+                                <input type="number" id="bpPulse" placeholder="72" min="30" max="200" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Date & Time</label>
+                                <input type="datetime-local" id="bpDate" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                Save Reading
+                            </button>
+                        </form>
                     </div>
                 </div>
 
-                <!-- TAB 4: APPOINTMENTS -->
-                <div id="tab-content-appointments" class="space-y-6 max-w-6xl mx-auto hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Doctor Appointments</h2>
-                            <p class="text-xs text-slate-400">Never miss a checkup, specialist visit, or follow-up</p>
+                <!-- History Table -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-slate-900 text-base mb-4">Blood Pressure Log History</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
+                                    <th class="py-3 px-4 font-semibold">Date / Time</th>
+                                    <th class="py-3 px-4 font-semibold">Systolic</th>
+                                    <th class="py-3 px-4 font-semibold">Diastolic</th>
+                                    <th class="py-3 px-4 font-semibold">Pulse</th>
+                                    <th class="py-3 px-4 font-semibold">Category</th>
+                                    <th class="py-3 px-4 font-semibold text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bpTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: APPOINTMENTS & CONTACTS -->
+            <div id="tabContent-appointments" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Appointments List -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-check text-blue-600"></i> Doctor Appointments
+                            </h4>
+                            <button onclick="openAppointmentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-plus mr-1"></i> Add
+                            </button>
                         </div>
-                        <button onclick="openAppointmentModal()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-plus text-xs"></i> Schedule Appointment
+                        <div id="appointmentsList" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Medical Contacts & Pharmacy -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-address-book text-medical-600"></i> Medical Contacts & Pharmacy
+                            </h4>
+                            <button onclick="openContactModal()" class="bg-medical-600 hover:bg-medical-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                        <div id="contactsList" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: HEALTH NOTES & IDEAS -->
+            <div id="tabContent-notes" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                <i class="fa-solid fa-notes-medical text-amber-500"></i> Health Notes & Random Items
+                            </h4>
+                            <p class="text-xs text-slate-500">Record observations, symptom logs, or questions for your doctors as you think of them.</p>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <input type="text" id="newNoteTitleInput" placeholder="Note title..." class="p-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none flex-grow">
+                            <button onclick="addFullHealthNote()" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm whitespace-nowrap">
+                                <i class="fa-solid fa-plus mr-1"></i> Add Note
+                            </button>
+                        </div>
+                    </div>
+                    <div id="healthNotesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: SECURITY & RECOVERY SETTINGS -->
+            <div id="tabContent-security" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-shield-keyhole"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-lg">Account Recovery & Security</h4>
+                            <p class="text-xs text-slate-500">Manage your password recovery options (Email or Phone Text) for this learning session.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Current Logged-in Username</label>
+                            <input type="text" id="secUsernameDisplay" readonly class="w-full p-2.5 text-sm bg-slate-200 text-slate-700 rounded-lg font-mono">
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                            <h5 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-key text-medical-600"></i> Change Password
+                            </h5>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">New Password</label>
+                                <input type="password" id="secNewPassword" placeholder="Enter new password" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <button onclick="updateAccountPassword()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm">
+                                Update Password
+                            </button>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                            <h5 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-envelope-circle-check text-blue-600"></i> Recovery Methods (Forgot Password setup)
+                            </h5>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Recovery Email</label>
+                                <input type="email" id="secRecoveryEmail" placeholder="e.g., user@example.com" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Recovery Phone (for Text SMS)</label>
+                                <input type="tel" id="secRecoveryPhone" placeholder="e.g., +1 (555) 019-2834" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                            </div>
+                            <button onclick="saveRecoveryMethods()" class="bg-medical-600 hover:bg-medical-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm">
+                                Save Recovery Options
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <p class="font-semibold text-slate-700">SecureMed Learning Project</p>
+                <p>Designed for educational exploration of medical tracking data and security workflows.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-emerald-600 font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i> System Secure (Demo)</span>
+                <button onclick="logoutUser()" id="footerLogoutBtn" class="hidden text-rose-600 hover:underline font-semibold">Sign Out</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- AUTHENTICATION MODAL (Sign In, Register, Forgot Password, Bypass) -->
+    <div id="authModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            
+            <!-- Modal Header Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50">
+                <button onclick="switchAuthTab('signin')" id="authTab-signin" class="flex-1 py-3 text-xs font-bold text-medical-700 border-b-2 border-medical-600 bg-white transition">Sign In</button>
+                <button onclick="switchAuthTab('register')" id="authTab-register" class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-700 transition">Register</button>
+                <button onclick="switchAuthTab('forgot')" id="authTab-forgot" class="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-700 transition">Forgot Password</button>
+            </div>
+
+            <div class="p-6">
+                
+                <!-- SIGN IN FORM -->
+                <div id="authForm-signin" class="auth-form space-y-4">
+                    <div class="text-center mb-4">
+                        <h3 class="font-bold text-slate-900 text-lg">Welcome Back</h3>
+                        <p class="text-xs text-slate-500">Sign in to your SecureMed account (Try admin: <code class="text-medical-700 font-bold">administrator</code> / <code class="text-medical-700 font-bold">1234</code>)</p>
+                    </div>
+
+                    <form onsubmit="handleSignIn(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+                            <input type="text" id="loginUsername" required placeholder="e.g. administrator or user" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-slate-700">Password</label>
+                                <button type="button" onclick="switchAuthTab('forgot')" class="text-xs text-medical-600 hover:underline">Forgot password?</button>
+                            </div>
+                            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-medical-600 hover:bg-medical-700 text-white py-2.5 rounded-lg text-xs font-bold transition shadow-sm">
+                            Sign In Securely
+                        </button>
+                    </form>
+
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="flex-shrink mx-4 text-slate-400 text-xs">or demo shortcut</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    <button onclick="quickAdminLogin()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-shield-halved"></i> Quick Admin Login (1234)
+                    </button>
+                </div>
+
+                <!-- REGISTER FORM -->
+                <div id="authForm-register" class="auth-form hidden space-y-4">
+                    <div class="text-center mb-4">
+                        <h3 class="font-bold text-slate-900 text-lg">Create New Account</h3>
+                        <p class="text-xs text-slate-500">Set up your profile and recovery preferences.</p>
+                    </div>
+
+                    <form onsubmit="handleRegister(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Choose Username</label>
+                            <input type="text" id="regUsername" required placeholder="e.g. janedoe" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+                            <input type="password" id="regPassword" required placeholder="••••••••" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Recovery Email (Optional)</label>
+                            <input type="email" id="regRecoveryEmail" placeholder="user@example.com" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Recovery Phone for Text SMS (Optional)</label>
+                            <input type="tel" id="regRecoveryPhone" placeholder="+1 (555) 000-0000" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-medical-600 hover:bg-medical-700 text-white py-2.5 rounded-lg text-xs font-bold transition shadow-sm">
+                            Register & Sign In
+                        </button>
+                    </form>
+                </div>
+
+                <!-- FORGOT PASSWORD FORM -->
+                <div id="authForm-forgot" class="auth-form hidden space-y-4">
+                    <div class="text-center mb-4">
+                        <h3 class="font-bold text-slate-900 text-lg">Password Recovery</h3>
+                        <p class="text-xs text-slate-500">Recover your account or choose bypass to enter directly.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Enter Your Username</label>
+                            <input type="text" id="forgotUsername" placeholder="e.g. administrator or user" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Choose Recovery Method</label>
+                            <select id="recoveryMethodSelect" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:outline-none bg-white">
+                                <option value="email">Send Verification Code via Email</option>
+                                <option value="sms">Send Verification Code via Phone Text (SMS)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="triggerRecoveryCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-xs font-bold transition shadow-sm">
+                            Send Recovery Code
+                        </button>
+
+                        <div id="recoveryCodeSection" class="hidden space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <p class="text-xs text-slate-600" id="recoveryPromptInfo">A code was sent. Enter code below or reset password:</p>
+                            <input type="text" id="recoveryCodeInput" placeholder="Enter 4-digit code (e.g. 1234)" class="w-full p-2 text-xs border border-slate-300 rounded-lg">
+                            <input type="password" id="newResetPassword" placeholder="Enter new password" class="w-full p-2 text-xs border border-slate-300 rounded-lg">
+                            <button onclick="completePasswordReset()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition">
+                                Reset Password & Sign In
+                            </button>
+                        </div>
+
+                        <div class="relative flex py-1 items-center">
+                            <div class="flex-grow border-t border-slate-200"></div>
+                            <span class="flex-shrink mx-4 text-slate-400 text-xs">or test option</span>
+                            <div class="flex-grow border-t border-slate-200"></div>
+                        </div>
+
+                        <!-- BYPASS AND LOG IN BUTTON -->
+                        <button onclick="bypassAndLogin()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold py-2.5 rounded-lg text-xs transition shadow flex items-center justify-center gap-2 border border-slate-700">
+                            <i class="fa-solid fa-unlock-keyhole"></i> Bypass & Log In Directly
                         </button>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="appointments-grid">
-                        <!-- Populated via JS -->
-                    </div>
                 </div>
 
-                <!-- TAB 5: CONTACTS -->
-                <div id="tab-content-contacts" class="space-y-6 max-w-6xl mx-auto hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Emergency & Doctor Contacts</h2>
-                            <p class="text-xs text-slate-400">Physicians, pharmacies, and emergency contacts directory</p>
-                        </div>
-                        <button onclick="openContactModal()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-plus text-xs"></i> Add Contact
-                        </button>
-                    </div>
+            </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="contacts-grid">
-                        <!-- Populated via JS -->
-                    </div>
-                </div>
-
-                <!-- TAB 6: NOTES ("Items as I think of them") -->
-                <div id="tab-content-notes" class="space-y-6 max-w-6xl mx-auto hidden">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Health Notes & Ideas</h2>
-                            <p class="text-xs text-slate-400">Jot down symptoms, questions for your doctor, or diet ideas as you think of them</p>
-                        </div>
-                        <button onclick="openNoteModal()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-teal-500/20 flex items-center gap-2 cursor-pointer">
-                            <i class="fa-solid fa-plus text-xs"></i> New Note
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="notes-grid">
-                        <!-- Populated via JS -->
-                    </div>
-                </div>
-
-            </main>
+            <!-- Modal Footer Close -->
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+                <span>Demo Environment</span>
+                <button onclick="closeAuthModal()" class="hover:text-slate-900 font-semibold">Cancel / Close</button>
+            </div>
         </div>
     </div>
 
-    <!-- ADD/EDIT MODALS -->
-
-    <!-- Prescription Modal -->
-    <div id="modal-prescription" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <h3 id="rx-modal-title" class="text-lg font-bold text-white mb-4">Add New Prescription</h3>
-            <form onsubmit="savePrescription(event)" class="space-y-4">
-                <input type="hidden" id="rx-id">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Medication Name</label>
-                    <input type="text" id="rx-name" required placeholder="e.g., Lisinopril" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
+    <!-- MODAL: ADD/EDIT PRESCRIPTION -->
+    <div id="prescriptionModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-slate-200">
+            <h3 id="prescriptionModalTitle" class="font-bold text-slate-900 text-lg mb-4">Add Prescription</h3>
+            <form onsubmit="handleSavePrescription(event)" class="space-y-4">
+                <input type="hidden" id="rxId">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Dosage</label>
-                        <input type="text" id="rx-dosage" required placeholder="e.g., 10mg" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Medication Name</label>
+                        <input type="text" id="rxName" required placeholder="e.g. Lisinopril" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Frequency</label>
-                        <input type="text" id="rx-freq" required placeholder="e.g., Once daily" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Dosage</label>
+                        <input type="text" id="rxDosage" required placeholder="e.g. 10mg" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Pills Remaining Count</label>
-                        <input type="number" id="rx-pills" required placeholder="30" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Frequency</label>
+                        <input type="text" id="rxFrequency" required placeholder="e.g. Once daily in morning" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Refill Threshold (Low Warning)</label>
-                        <input type="number" id="rx-threshold" required placeholder="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Pills Remaining</label>
+                        <input type="number" id="rxRemaining" required placeholder="30" min="0" max="1000" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Instructions / Notes</label>
-                    <textarea id="rx-notes" rows="2" placeholder="Take with food in the morning" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500"></textarea>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Prescribing Doctor</label>
+                        <input type="text" id="rxDoctor" placeholder="Dr. Smith" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Pharmacy</label>
+                        <input type="text" id="rxPharmacy" placeholder="CVS Pharmacy #412" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                    </div>
                 </div>
-                <div class="flex justify-end gap-3 pt-3">
-                    <button type="button" onclick="closePrescriptionModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl text-xs font-semibold transition cursor-pointer">Save Prescription</button>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closePrescriptionModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-medical-600 hover:bg-medical-700 text-white rounded-lg text-xs font-semibold shadow">Save Prescription</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- BP Reading Modal -->
-    <div id="modal-vitals" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-4">Log Blood Pressure Reading</h3>
-            <form onsubmit="saveVitals(event)" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Systolic (mmHg)</label>
-                        <input type="number" id="bp-sys" required placeholder="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Diastolic (mmHg)</label>
-                        <input type="number" id="bp-dia" required placeholder="80" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
+    <!-- MODAL: ADD APPOINTMENT -->
+    <div id="appointmentModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 border border-slate-200">
+            <h3 class="font-bold text-slate-900 text-lg mb-4">Add Doctor Appointment</h3>
+            <form onsubmit="handleSaveAppointment(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Doctor / Specialist</label>
+                    <input type="text" id="apptDoctor" required placeholder="Dr. Robert Johnson (Cardiologist)" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Pulse (bpm)</label>
-                        <input type="number" id="bp-pulse" placeholder="72" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Date & Time</label>
-                        <input type="datetime-local" id="bp-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500">
-                    </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Purpose / Reason</label>
+                    <input type="text" id="apptReason" required placeholder="Annual Blood Pressure Checkup" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                 </div>
-                <div class="flex justify-end gap-3 pt-3">
-                    <button type="button" onclick="closeVitalsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl text-xs font-semibold transition cursor-pointer">Save Reading</button>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Date & Time</label>
+                    <input type="datetime-local" id="apptDate" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Location / Clinic</label>
+                    <input type="text" id="apptLocation" placeholder="Medical Center Suite 300" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeAppointmentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow">Save Appointment</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Appointment Modal -->
-    <div id="modal-appointment" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-4">Schedule Doctor Appointment</h3>
-            <form onsubmit="saveAppointment(event)" class="space-y-4">
-                <input type="hidden" id="app-id">
+    <!-- MODAL: ADD CONTACT -->
+    <div id="contactModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 border border-slate-200">
+            <h3 class="font-bold text-slate-900 text-lg mb-4">Add Medical Contact</h3>
+            <form onsubmit="handleSaveContact(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Doctor / Specialist Name</label>
-                    <input type="text" id="app-doctor" required placeholder="Dr. Sarah Jenkins, Cardiology" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Reason / Purpose</label>
-                        <input type="text" id="app-reason" required placeholder="Annual checkup" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Date & Time</label>
-                        <input type="datetime-local" id="app-datetime" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500">
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Name / Title</label>
+                    <input type="text" id="contactName" required placeholder="Dr. Emily Davis (Primary Care)" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Location / Clinic</label>
-                    <input type="text" id="app-location" placeholder="City Medical Center, Suite 402" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Specialty / Role</label>
+                    <input type="text" id="contactRole" required placeholder="Primary Care Physician" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Notes / Questions to Ask</label>
-                    <textarea id="app-notes" rows="2" placeholder="Ask about medication side effects..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                    <input type="tel" id="contactPhone" required placeholder="(555) 234-5678" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
                 </div>
-                <div class="flex justify-end gap-3 pt-3">
-                    <button type="button" onclick="closeAppointmentModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl text-xs font-semibold transition cursor-pointer">Save Appointment</button>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Notes / Address</label>
+                    <input type="text" id="contactNotes" placeholder="City Health Clinic, Bldg B" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeContactModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-medical-600 hover:bg-medical-700 text-white rounded-lg text-xs font-semibold shadow">Save Contact</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Contact Modal -->
-    <div id="modal-contact" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-4">Add Doctor or Emergency Contact</h3>
-            <form onsubmit="saveContact(event)" class="space-y-4">
-                <input type="hidden" id="contact-id">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Contact Name / Title</label>
-                    <input type="text" id="contact-name" required placeholder="Dr. Robert Smith (Primary)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Specialty / Role</label>
-                        <input type="text" id="contact-role" required placeholder="Primary Care Physician" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Phone Number</label>
-                        <input type="text" id="contact-phone" required placeholder="(555) 123-4567" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Address / Notes</label>
-                    <input type="text" id="contact-address" placeholder="123 Health Ave, Medical Plaza" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                </div>
-                <div class="flex items-center gap-2 pt-1">
-                    <input type="checkbox" id="contact-is-primary" class="rounded bg-slate-950 border-slate-800 text-teal-500 focus:ring-0">
-                    <label for="contact-is-primary" class="text-xs text-slate-300 font-medium">Set as Primary Emergency Contact</label>
-                </div>
-                <div class="flex justify-end gap-3 pt-3">
-                    <button type="button" onclick="closeContactModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl text-xs font-semibold transition cursor-pointer">Save Contact</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Health Note Modal -->
-    <div id="modal-note" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <h3 class="text-lg font-bold text-white mb-4">Add Health Note or Idea</h3>
-            <form onsubmit="saveNote(event)" class="space-y-4">
-                <input type="hidden" id="note-id">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Title or Topic</label>
-                    <input type="text" id="note-title" required placeholder="e.g., Morning Dizziness Question" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Details / Thoughts</label>
-                    <textarea id="note-body" rows="4" required placeholder="Felt slightly dizzy after taking morning meds on empty stomach. Ask Dr. Smith if food requirement changed." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500"></textarea>
-                </div>
-                <div class="flex justify-end gap-3 pt-3">
-                    <button type="button" onclick="closeNoteModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl text-xs font-semibold transition cursor-pointer">Save Note</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Application JavaScript Logic -->
+    <!-- JavaScript Application Logic -->
     <script>
         // State Management
         let currentUser = null;
-        let activeTab = 'overview';
+        let userRole = 'Standard User'; // 'Administrator' or 'Standard User'
         let bpChartInstance = null;
 
-        // Default Storage Data Model
-        function getEmptyUserData() {
-            return {
-                name: "Patient",
-                prescriptions: [],
-                vitals: [],
-                appointments: [],
-                contacts: [],
-                notes: []
-            };
-        }
+        // Default Data Store Structure
+        let appData = {
+            prescriptions: [],
+            bloodPressure: [],
+            appointments: [],
+            contacts: [],
+            notes: [],
+            recovery: {
+                email: '',
+                phone: ''
+            }
+        };
 
-        // Initialize Application
+        // Initialize application on load
         window.addEventListener('DOMContentLoaded', () => {
-            checkExistingSession();
-            // Set current date string
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('today-date-str').innerText = new Date().toLocaleDateString(undefined, options);
-        });
-
-        function checkExistingSession() {
             const savedUser = localStorage.getItem('securemed_current_user');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser);
+                currentUser = savedUser;
+                userRole = localStorage.getItem('securemed_current_role') || 'Standard User';
+                loadUserData();
                 showDashboard();
-            } else {
-                showAuth();
             }
-        }
-
-        // Custom Modal helper (replaces alert)
-        function showModal(title, message, iconClass = "fa-solid fa-circle-info") {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-message').innerText = message;
-            document.getElementById('modal-icon').innerHTML = `<i class="${iconClass}"></i>`;
-            document.getElementById('custom-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('custom-modal').classList.add('hidden');
-        }
-
-        function dismissWarning() {
-            document.getElementById('dummy-warning-banner').classList.add('hidden');
-        }
-
-        // Authentication simulation
-        function switchAuthTab(tab) {
-            const loginForm = document.getElementById('form-login');
-            const regForm = document.getElementById('form-register');
-            const tabLogin = document.getElementById('tab-login');
-            const tabReg = document.getElementById('tab-register');
-
-            if (tab === 'login') {
-                loginForm.classList.remove('hidden');
-                regForm.classList.add('hidden');
-                tabLogin.className = "flex-1 py-2 text-xs font-semibold rounded-lg transition bg-teal-500 text-slate-950 shadow";
-                tabReg.className = "flex-1 py-2 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
-            } else {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                tabReg.className = "flex-1 py-2 text-xs font-semibold rounded-lg transition bg-teal-500 text-slate-950 shadow";
-                tabLogin.className = "flex-1 py-2 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
-            }
-        }
-
-        function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const name = email.split('@')[0];
-            const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
-            
-            // Check if user data exists in localStorage
-            let storedData = localStorage.getItem(`securemed_data_${email}`);
-            if (!storedData) {
-                // Initialize with blank or prompt to load dummy data
-                const newData = getEmptyUserData();
-                newData.name = formattedName;
-                localStorage.setItem(`securemed_data_${email}`, JSON.stringify(newData));
-                storedData = JSON.stringify(newData);
-            }
-
-            currentUser = { email, ...JSON.parse(storedData) };
-            localStorage.setItem('securemed_current_user', JSON.stringify(currentUser));
-            showDashboard();
-        }
-
-        function handleRegister(e) {
-            e.preventDefault();
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-
-            const newData = getEmptyUserData();
-            newData.name = name;
-            localStorage.setItem(`securemed_data_${email}`, JSON.stringify(newData));
-
-            currentUser = { email, ...newData };
-            localStorage.setItem('securemed_current_user', JSON.stringify(currentUser));
-            showDashboard();
-        }
-
-        function loadDummyDataAndLogin() {
-            const dummyEmail = "alex.patient@example.com";
-            const dummyUser = {
-                email: dummyEmail,
-                name: "Alex Morgan",
-                prescriptions: [
-                    { id: 'rx-1', name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily (Morning)', pillsRemaining: 5, threshold: 7, notes: 'Take with water before breakfast. Blood pressure control.' },
-                    { id: 'rx-2', name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', pillsRemaining: 24, threshold: 10, notes: 'Take with meals to prevent stomach upset.' },
-                    { id: 'rx-3', name: 'Atorvastatin', dosage: '20mg', frequency: 'Once daily (Evening)', pillsRemaining: 18, threshold: 7, notes: 'Cholesterol management.' }
-                ],
-                vitals: [
-                    { id: 'v-1', sys: 132, dia: 84, pulse: 76, date: '2026-04-20T08:30' },
-                    { id: 'v-2', sys: 128, dia: 82, pulse: 72, date: '2026-04-21T08:15' },
-                    { id: 'v-3', sys: 124, dia: 78, pulse: 74, date: '2026-04-22T09:00' },
-                    { id: 'v-4', sys: 126, dia: 80, pulse: 70, date: '2026-04-23T08:45' },
-                    { id: 'v-5', sys: 120, dia: 76, pulse: 68, date: '2026-04-24T08:20' }
-                ],
-                appointments: [
-                    { id: 'app-1', doctor: 'Dr. Sarah Jenkins (Cardiology)', reason: 'Annual Blood Pressure Review', datetime: '2026-05-12T10:00', location: 'City Medical Center, Suite 402', notes: 'Bring home BP log sheet. Fasting required for morning lab work.' },
-                    { id: 'app-2', doctor: 'Dr. Marcus Vance (Endocrinology)', reason: 'Diabetes Management Follow-up', datetime: '2026-05-28T14:30', location: 'Metropolitan Health Clinic', notes: 'Review continuous glucose trends.' }
-                ],
-                contacts: [
-                    { id: 'c-1', name: 'Dr. Sarah Jenkins', role: 'Cardiologist', phone: '(555) 382-9100', address: 'City Medical Center, Suite 402', isPrimary: true },
-                    { id: 'c-2', name: 'MetroCare Pharmacy', role: 'Preferred Pharmacy', phone: '(555) 492-1188', address: '784 Health Blvd', isPrimary: false },
-                    { id: 'c-3', name: 'Jamie Morgan (Spouse)', role: 'Emergency Contact', phone: '(555) 918-2233', address: 'Home', isPrimary: true }
-                ],
-                notes: [
-                    { id: 'n-1', title: 'Morning Lightheadedness', body: 'Felt slight dizziness on Tuesday morning. Could be related to Lisinopril dosage timing. Mention to Dr. Jenkins.', date: '2026-04-22' },
-                    { id: 'n-2', title: 'New Diet Plan', body: 'Started reducing daily sodium intake below 2,000mg per cardiologist recommendation.', date: '2026-04-20' },
-                    { id: 'n-3', title: 'Refill Reminder Question', body: 'Check if pharmacy offers auto-refill for Atorvastatin.', date: '2026-04-18' }
-                ]
-            };
-
-            localStorage.setItem(`securemed_data_${dummyEmail}`, JSON.stringify(dummyUser));
-            currentUser = dummyUser;
-            localStorage.setItem('securemed_current_user', JSON.stringify(currentUser));
-            showDashboard();
-            showModal("Dummy Data Loaded", "Successfully loaded realistic sample health records for demonstration purposes.", "fa-solid fa-wand-magic-sparkles");
-        }
+        });
 
         function loadDummyData() {
-            loadDummyDataAndLogin();
+            currentUser = currentUser || 'DemoUser';
+            userRole = 'Standard User';
+            
+            appData = {
+                prescriptions: [
+                    { id: 1, name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily (morning)', remaining: 12, doctor: 'Dr. Robert Johnson', pharmacy: 'CVS Pharmacy #412' },
+                    { id: 2, name: 'Atorvastatin', dosage: '20mg', frequency: 'Once daily (evening)', remaining: 5, doctor: 'Dr. Robert Johnson', pharmacy: 'Walgreens #992' },
+                    { id: 3, name: 'Metformin', dosage: '500mg', frequency: 'Twice daily with meals', remaining: 24, doctor: 'Dr. Emily Davis', pharmacy: 'CVS Pharmacy #412' }
+                ],
+                bloodPressure: [
+                    { id: 1, date: '2026-06-01T08:30', systolic: 128, diastolic: 82, pulse: 74, category: 'Prehypertension' },
+                    { id: 2, date: '2026-06-05T09:00', systolic: 124, diastolic: 80, pulse: 72, category: 'Normal' },
+                    { id: 3, date: '2026-06-10T08:15', systolic: 118, diastolic: 78, pulse: 70, category: 'Normal' },
+                    { id: 4, date: '2026-06-15T08:45', systolic: 122, diastolic: 79, pulse: 71, category: 'Normal' }
+                ],
+                appointments: [
+                    { id: 1, doctor: 'Dr. Robert Johnson (Cardiology)', reason: '6-Month Blood Pressure & Heart Review', date: '2026-06-28T10:00', location: 'Medical Arts Tower, Suite 402' },
+                    { id: 2, doctor: 'Dr. Emily Davis (Primary Care)', reason: 'Annual Wellness Exam & Lab Review', date: '2026-07-12T14:30', location: 'City Health Clinic, Bldg B' }
+                ],
+                contacts: [
+                    { id: 1, name: 'Dr. Robert Johnson', role: 'Cardiologist', phone: '(555) 382-9100', notes: 'Medical Arts Tower' },
+                    { id: 2, name: 'Dr. Emily Davis', role: 'Primary Care Physician', phone: '(555) 491-2800', notes: 'City Health Clinic' },
+                    { id: 3, name: 'CVS Pharmacy #412', role: 'Preferred Pharmacy', phone: '(555) 883-1200', notes: '124 Main Street' }
+                ],
+                notes: [
+                    { id: 1, title: 'Morning Dizziness Note', date: '2026-06-12', content: 'Felt slight lightheadedness on June 11 after taking morning Lisinopril. Mention to Dr. Johnson.' },
+                    { id: 2, title: 'Questions for Next Visit', date: '2026-06-14', content: '1. Should I check BP twice a day? 2. Dietary sodium limits for current medication plan.' }
+                ],
+                recovery: {
+                    email: 'demouser@example.com',
+                    phone: '+1 (555) 019-2834'
+                }
+            };
+
+            saveUserData();
+            showDashboard();
+            showNotification('Dummy data loaded successfully!', 'success');
         }
 
-        function handleLogout() {
+        function quickAdminLogin() {
+            currentUser = 'administrator';
+            userRole = 'Administrator';
+            localStorage.setItem('securemed_current_user', currentUser);
+            localStorage.setItem('securemed_current_role', userRole);
+            
+            // Check if admin data exists, else load dummy
+            const saved = localStorage.getItem('securemed_data_' + currentUser);
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                loadDummyData();
+                return;
+            }
+
+            closeAuthModal();
+            showDashboard();
+            showNotification('Logged in as Administrator ("administrator")', 'success');
+        }
+
+        // Authentication Modal Toggles
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+            switchAuthTab('signin');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-form').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#authModal button[id^="authTab-"]').forEach(el => {
+                el.classList.remove('text-medical-700', 'border-b-2', 'border-medical-600', 'bg-white');
+                el.classList.add('text-slate-500');
+            });
+
+            document.getElementById(`authForm-${tab}`).classList.remove('hidden');
+            const activeTabBtn = document.getElementById(`authTab-${tab}`);
+            if (activeTabBtn) {
+                activeTabBtn.classList.remove('text-slate-500');
+                activeTabBtn.classList.add('text-medical-700', 'border-b-2', 'border-medical-600', 'bg-white');
+            }
+        }
+
+        function handleSignIn(event) {
+            event.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value;
+
+            if (u === 'administrator' && p === '1234') {
+                quickAdminLogin();
+                return;
+            }
+
+            // Check local storage for user
+            const storedPass = localStorage.getItem('securemed_pass_' + u);
+            if (storedPass && storedPass === p) {
+                currentUser = u;
+                userRole = 'Standard User';
+                localStorage.setItem('securemed_current_user', currentUser);
+                localStorage.setItem('securemed_current_role', userRole);
+                loadUserData();
+                closeAuthModal();
+                showDashboard();
+                showNotification(`Welcome back, ${currentUser}!`, 'success');
+            } else {
+                alert('Invalid username or password. (Hint: administrator / 1234 or register a new user)');
+            }
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const u = document.getElementById('regUsername').value.trim();
+            const p = document.getElementById('regPassword').value;
+            const email = document.getElementById('regRecoveryEmail').value.trim();
+            const phone = document.getElementById('regRecoveryPhone').value.trim();
+
+            if (!u || !p) return;
+
+            localStorage.setItem('securemed_pass_' + u, p);
+            currentUser = u;
+            userRole = 'Standard User';
+            localStorage.setItem('securemed_current_user', currentUser);
+            localStorage.setItem('securemed_current_role', userRole);
+
+            appData.recovery = { email: email, phone: phone };
+            saveUserData();
+            closeAuthModal();
+            showDashboard();
+            showNotification(`Account registered and logged in as ${currentUser}!`, 'success');
+        }
+
+        function triggerRecoveryCode() {
+            const u = document.getElementById('forgotUsername').value.trim();
+            const method = document.getElementById('recoveryMethodSelect').value;
+
+            if (!u) {
+                alert('Please enter your username first.');
+                return;
+            }
+
+            document.getElementById('recoveryCodeSection').classList.remove('hidden');
+            const infoText = method === 'email' 
+                ? `Verification code sent to email on file for "${u}". (Demo code: 1234)`
+                : `SMS text verification code sent to phone on file for "${u}". (Demo code: 1234)`;
+            document.getElementById('recoveryPromptInfo').innerText = infoText;
+        }
+
+        function completePasswordReset() {
+            const u = document.getElementById('forgotUsername').value.trim();
+            const code = document.getElementById('recoveryCodeInput').value.trim();
+            const newPass = document.getElementById('newResetPassword').value;
+
+            if (code !== '1234') {
+                alert('Invalid verification code. Please use demo code "1234".');
+                return;
+            }
+            if (!newPass) {
+                alert('Please enter a new password.');
+                return;
+            }
+
+            localStorage.setItem('securemed_pass_' + u, newPass);
+            currentUser = u;
+            userRole = u === 'administrator' ? 'Administrator' : 'Standard User';
+            localStorage.setItem('securemed_current_user', currentUser);
+            localStorage.setItem('securemed_current_role', userRole);
+            loadUserData();
+            closeAuthModal();
+            showDashboard();
+            showNotification('Password successfully reset! Logged in.', 'success');
+        }
+
+        function bypassAndLogin() {
+            const u = document.getElementById('forgotUsername').value.trim() || 'GuestUser';
+            currentUser = u;
+            userRole = u === 'administrator' ? 'Administrator' : 'Standard User';
+            localStorage.setItem('securemed_current_user', currentUser);
+            localStorage.setItem('securemed_current_role', userRole);
+            loadUserData();
+            closeAuthModal();
+            showDashboard();
+            showNotification(`Bypassed recovery and logged in as ${currentUser}`, 'success');
+        }
+
+        function logoutUser() {
             localStorage.removeItem('securemed_current_user');
+            localStorage.removeItem('securemed_current_role');
             currentUser = null;
-            showAuth();
-        }
-
-        function showAuth() {
-            document.getElementById('auth-view').classList.remove('hidden');
-            document.getElementById('dashboard-view').classList.add('hidden');
+            userRole = 'Standard User';
+            
+            document.getElementById('welcomeHero').classList.remove('hidden');
+            document.getElementById('appDashboard').classList.add('hidden');
+            document.getElementById('userStatusBadge').classList.add('hidden');
+            document.getElementById('navAuthBtn').classList.remove('hidden');
+            document.getElementById('footerLogoutBtn').classList.add('hidden');
+            showNotification('Signed out successfully.', 'info');
         }
 
         function showDashboard() {
-            document.getElementById('auth-view').classList.add('hidden');
-            document.getElementById('dashboard-view').classList.remove('hidden');
-            document.getElementById('user-display-name').innerText = `Welcome, ${currentUser.name || 'Patient'}`;
-            refreshDashboardData();
+            document.getElementById('welcomeHero').classList.add('hidden');
+            document.getElementById('appDashboard').classList.remove('hidden');
+            document.getElementById('userStatusBadge').classList.remove('hidden');
+            document.getElementById('navAuthBtn').classList.add('hidden');
+            document.getElementById('footerLogoutBtn').classList.remove('hidden');
+            
+            document.getElementById('navUsername').innerText = currentUser;
+            document.getElementById('displayNameHeader').innerText = currentUser;
+            document.getElementById('displayRoleName').innerText = userRole;
+            document.getElementById('lastLoginTime').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Highlight Admin Badge
+            const badgeContainer = document.getElementById('roleBadgeContainer');
+            if (userRole === 'Administrator') {
+                badgeContainer.className = "px-3 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-amber-300";
+                badgeContainer.innerHTML = `<i class="fa-solid fa-shield-halved"></i> Administrator (Full Privileges)`;
+            } else {
+                badgeContainer.className = "px-3 py-1 bg-medical-50 text-medical-700 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-medical-200";
+                badgeContainer.innerHTML = `<i class="fa-solid fa-user"></i> Standard Patient User`;
+            }
+
+            // Security tab fields
+            document.getElementById('secUsernameDisplay').value = currentUser;
+            document.getElementById('secRecoveryEmail').value = appData.recovery.email || '';
+            document.getElementById('secRecoveryPhone').value = appData.recovery.phone || '';
+
+            refreshAllViews();
+        }
+
+        function saveUserData() {
+            if (!currentUser) return;
+            localStorage.setItem('securemed_data_' + currentUser, JSON.stringify(appData));
+        }
+
+        function loadUserData() {
+            if (!currentUser) return;
+            const saved = localStorage.getItem('securemed_data_' + currentUser);
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                // Initialize default empty structure
+                appData = { prescriptions: [], bloodPressure: [], appointments: [], contacts: [], notes: [], recovery: { email: '', phone: '' } };
+            }
         }
 
         // Tab Switching
         function switchTab(tabId) {
-            activeTab = tabId;
-            const tabs = ['overview', 'prescriptions', 'vitals', 'appointments', 'contacts', 'notes'];
-            
-            tabs.forEach(t => {
-                const contentEl = document.getElementById(`tab-content-${t}`);
-                const navEl = document.getElementById(`nav-${t}`);
-                if (t === tabId) {
-                    contentEl.classList.remove('hidden');
-                    navEl.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-teal-500/10 text-teal-400 border border-teal-500/20 cursor-pointer";
-                } else {
-                    contentEl.classList.add('hidden');
-                    navEl.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer";
-                }
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-medical-600', 'text-white', 'shadow-sm');
+                el.classList.add('bg-slate-100', 'text-slate-600');
             });
 
+            document.getElementById(`tabContent-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                activeBtn.classList.add('bg-medical-600', 'text-white', 'shadow-sm');
+            }
+
             if (tabId === 'vitals') {
-                renderBpChart();
+                renderBPChart();
             }
         }
 
-        // Save State Helper
-        function saveUserData() {
-            localStorage.setItem(`securemed_data_${currentUser.email}`, JSON.stringify(currentUser));
-            localStorage.setItem('securemed_current_user', JSON.stringify(currentUser));
-            refreshDashboardData();
-        }
-
-        function refreshDashboardData() {
-            renderOverview();
-            renderPrescriptions();
-            renderVitals();
-            renderAppointments();
-            renderContacts();
-            renderNotes();
-            if (activeTab === 'vitals') {
-                renderBpChart();
+        // Refresh all table/list views and stats
+        function refreshAllViews() {
+            renderOverviewStats();
+            renderReminders();
+            renderPrescriptionsTable();
+            renderBPTable();
+            renderAppointmentsList();
+            renderContactsList();
+            renderHealthNotes();
+            if (!document.getElementById('tabContent-vitals').classList.contains('hidden')) {
+                renderBPChart();
             }
         }
 
-        // --- OVERVIEW TAB RENDERING ---
-        function renderOverview() {
-            const rxCount = currentUser.prescriptions.length;
-            const lowRefills = currentUser.prescriptions.filter(p => p.pillsRemaining <= p.threshold).length;
+        // Overview & Stats
+        function renderOverviewStats() {
+            const rxCount = appData.prescriptions.length;
+            const lowRefills = appData.prescriptions.filter(p => p.remaining <= 7).length;
             
-            document.getElementById('stat-active-rx').innerText = rxCount;
-            document.getElementById('stat-refills').innerText = lowRefills;
+            document.getElementById('statRxCount').innerText = rxCount;
+            document.getElementById('statRefillCount').innerText = lowRefills;
 
             // Next appointment
-            if (currentUser.appointments.length > 0) {
-                // Sort ascending by date
-                const sortedApps = [...currentUser.appointments].sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
-                const nextApp = sortedApps[0];
-                const appDateObj = new Date(nextApp.datetime);
-                document.getElementById('stat-next-app').innerText = nextApp.doctor;
-                document.getElementById('stat-next-app-date').innerText = appDateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            if (appData.appointments.length > 0) {
+                const sortedAppts = [...appData.appointments].sort((a,b) => new Date(a.date) - new Date(b.date));
+                const next = sortedAppts[0];
+                const dateFormatted = new Date(next.date).toLocaleDateString([], { month: 'short', day: 'numeric' });
+                document.getElementById('statNextAppt').innerText = `${dateFormatted}`;
             } else {
-                document.getElementById('stat-next-app').innerText = "None Scheduled";
-                document.getElementById('stat-next-app-date').innerText = "Click Appointments to add";
+                document.getElementById('statNextAppt').innerText = 'None';
             }
 
             // Latest BP
-            if (currentUser.vitals.length > 0) {
-                const sortedVitals = [...currentUser.vitals].sort((a,b) => new Date(b.date) - new Date(a.date));
-                const latest = sortedVitals[0];
-                document.getElementById('stat-latest-bp').innerText = `${latest.sys}/${latest.dia}`;
-                
-                let statusText = "Normal";
-                let statusClass = "text-teal-400";
-                if (latest.sys >= 140 || latest.dia >= 90) {
-                    statusText = "High (Stage 2)";
-                    statusClass = "text-rose-400";
-                } else if ((latest.sys >= 130 && latest.sys <= 139) || (latest.dia >= 80 && latest.dia <= 89)) {
-                    statusText = "High (Stage 1)";
-                    statusClass = "text-amber-400";
-                } else if (latest.sys < 120 && latest.dia < 80) {
-                    statusText = "Optimal";
-                    statusClass = "text-teal-400";
-                } else {
-                    statusText = "Elevated";
-                    statusClass = "text-amber-300";
-                }
-                const statusEl = document.getElementById('stat-bp-status');
-                statusEl.innerText = statusText;
-                statusEl.className = `text-xs mt-1 font-medium ${statusClass}`;
+            if (appData.bloodPressure.length > 0) {
+                const sortedBP = [...appData.bloodPressure].sort((a,b) => new Date(b.date) - new Date(a.date));
+                const latest = sortedBP[0];
+                document.getElementById('statLatestBP').innerText = `${latest.systolic}/${latest.diastolic}`;
             } else {
-                document.getElementById('stat-latest-bp').innerText = "--/--";
-                document.getElementById('stat-bp-status').innerText = "No records logged";
+                document.getElementById('statLatestBP').innerText = '--/--';
             }
+        }
 
-            // Overview Reminders / Checklist
-            const remindersContainer = document.getElementById('overview-reminders-list');
-            let html = '';
-            
-            if (currentUser.prescriptions.length === 0) {
-                html = `<div class="text-slate-500 text-xs py-4 text-center">No prescriptions found. Add prescriptions to see daily take reminders.</div>`;
-            } else {
-                currentUser.prescriptions.forEach(rx => {
-                    const isLow = rx.pillsRemaining <= rx.threshold;
-                    html += `
-                        <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        function renderReminders() {
+            const container = document.getElementById('remindersList');
+            container.innerHTML = '';
+
+            let itemsHtml = '';
+
+            // Refill reminders
+            const lowRx = appData.prescriptions.filter(p => p.remaining <= 7);
+            if (lowRx.length > 0) {
+                lowRx.forEach(rx => {
+                    itemsHtml += `
+                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-pills"></i>
+                                <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                                    <i class="fa-solid fa-prescription-bottle"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-white text-sm">${rx.name} <span class="text-xs font-normal text-slate-400">(${rx.dosage})</span></h4>
-                                    <p class="text-xs text-slate-400">${rx.frequency} • <span class="${isLow ? 'text-amber-400 font-semibold' : 'text-slate-300'}">${rx.pillsRemaining} pills remaining</span></p>
+                                    <p class="font-bold text-slate-900">Refill Reminder: ${rx.name} (${rx.dosage})</p>
+                                    <p class="text-amber-700">Only <strong>${rx.remaining} pills</strong> remaining. Contact pharmacy: ${rx.pharmacy || 'Default'}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                ${isLow ? `<span class="text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded-lg font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Refill Needed</span>` : ''}
-                                <button onclick="takePill('${rx.id}')" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5">
-                                    <i class="fa-solid fa-check"></i> Take Dose (-1)
-                                </button>
-                            </div>
+                            <button onclick="refillPrescription(${rx.id})" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-semibold shadow">
+                                Refill (+30)
+                            </button>
                         </div>
                     `;
                 });
             }
-            remindersContainer.innerHTML = html;
 
-            // Overview Notes preview
-            const notesPreview = document.getElementById('overview-notes-preview');
-            let notesHtml = '';
-            if (currentUser.notes.length === 0) {
-                notesHtml = `<div class="text-slate-500 text-xs py-3 text-center">No notes recorded yet.</div>`;
-            } else {
-                currentUser.notes.slice(0, 2).forEach(note => {
-                    notesHtml += `
-                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
-                            <h5 class="font-semibold text-white text-xs mb-1">${note.title}</h5>
-                            <p class="text-xs text-slate-400 line-clamp-1">${note.body}</p>
-                        </div>
-                    `;
-                });
-            }
-            notesPreview.innerHTML = notesHtml;
-
-            // Overview Primary Contact
-            const contactContainer = document.getElementById('overview-primary-contact');
-            const primaryContact = currentUser.contacts.find(c => c.isPrimary) || currentUser.contacts[0];
-            if (primaryContact) {
-                contactContainer.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-white text-sm">${primaryContact.name}</h4>
-                            <p class="text-xs text-teal-400 font-medium">${primaryContact.role}</p>
-                            <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i> ${primaryContact.phone}</p>
-                        </div>
-                        <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-lg">Primary</span>
-                    </div>
-                `;
-            } else {
-                contactContainer.innerHTML = `<div class="text-slate-500 text-xs text-center py-2">No emergency contacts listed.</div>`;
-            }
-        }
-
-        function takePill(rxId) {
-            const rx = currentUser.prescriptions.find(p => p.id === rxId);
-            if (rx) {
-                if (rx.pillsRemaining > 0) {
-                    rx.pillsRemaining -= 1;
-                    saveUserData();
-                    showModal("Dose Logged", `Successfully recorded dose for ${rx.name}. ${rx.pillsRemaining} pills remaining in supply.`, "fa-solid fa-circle-check");
-                } else {
-                    showModal("Refill Required", `${rx.name} has 0 pills remaining. Please refill prescription.`, "fa-solid fa-triangle-exclamation");
-                }
-            }
-        }
-
-        function addQuickNote() {
-            const input = document.getElementById('quick-note-input');
-            const val = input.value.trim();
-            if (!val) return;
-
-            const newNote = {
-                id: 'n-' + Date.now(),
-                title: 'Quick Health Note',
-                body: val,
-                date: new Date().toISOString().split('T')[0]
-            };
-
-            currentUser.notes.unshift(newNote);
-            input.value = '';
-            saveUserData();
-            showModal("Note Saved", "Health note added successfully to your vault.", "fa-solid fa-circle-check");
-        }
-
-        // --- PRESCRIPTIONS TAB ---
-        function renderPrescriptions() {
-            const grid = document.getElementById('prescriptions-grid');
-            let html = '';
-
-            if (currentUser.prescriptions.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No prescriptions added yet. Click 'Add Prescription' to get started.</div>`;
-                return;
-            }
-
-            currentUser.prescriptions.forEach(rx => {
-                const isLow = rx.pillsRemaining <= rx.threshold;
-                html += `
-                    <div class="bg-slate-950 border ${isLow ? 'border-amber-500/40' : 'border-slate-800/80'} rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <span class="text-[10px] uppercase font-semibold text-teal-400 tracking-wider">${rx.dosage}</span>
-                                    <h3 class="font-bold text-white text-base">${rx.name}</h3>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <button onclick="editPrescription('${rx.id}')" class="text-slate-400 hover:text-white p-1.5 transition text-xs"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="deletePrescription('${rx.id}')" class="text-slate-400 hover:text-rose-400 p-1.5 transition text-xs"><i class="fa-solid fa-trash"></i></button>
-                                </div>
+            // Today's medication checklist simulation
+            if (appData.prescriptions.length > 0) {
+                itemsHtml += `
+                    <div class="p-3 bg-medical-50 border border-medical-200 rounded-xl flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-medical-100 text-medical-700 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-pills"></i>
                             </div>
-                            <div class="space-y-2 mb-4 text-xs">
-                                <p class="text-slate-300"><strong class="text-slate-400">Frequency:</strong> ${rx.frequency}</p>
-                                <p class="text-slate-300"><strong class="text-slate-400">Instructions:</strong> ${rx.notes || 'None specified'}</p>
-                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 mt-3 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-slate-400 block text-[11px]">Supply Status</span>
-                                        <span class="font-bold ${isLow ? 'text-amber-400' : 'text-white'} text-sm">${rx.pillsRemaining} pills left</span>
-                                    </div>
-                                    ${isLow ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-1 rounded font-medium">Refill Low</span>' : '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-1 rounded font-medium">Sufficient</span>'}
-                                </div>
+                            <div>
+                                <p class="font-bold text-slate-900">Daily Morning Dose Schedule</p>
+                                <p class="text-medical-700">Take scheduled morning medications with water.</p>
                             </div>
                         </div>
-                        <div class="pt-3 border-t border-slate-900 flex items-center justify-between gap-2">
-                            <button onclick="refillPrescription('${rx.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 py-2 rounded-xl text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5">
-                                <i class="fa-solid fa-rotate-right"></i> Refill Supply (+30)
-                            </button>
-                            <button onclick="takePill('${rx.id}')" class="bg-teal-500 hover:bg-teal-400 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">
-                                Take Dose
-                            </button>
-                        </div>
+                        <span class="px-2.5 py-1 bg-medical-600 text-white rounded-lg font-semibold">Done Today</span>
                     </div>
                 `;
-            });
-            grid.innerHTML = html;
+            }
+
+            if (!itemsHtml) {
+                itemsHtml = `<p class="text-xs text-slate-400 text-center py-4">No active refill alerts or urgent reminders right now.</p>`;
+            }
+
+            container.innerHTML = itemsHtml;
         }
 
+        // Prescriptions Management
         function openPrescriptionModal(rxId = null) {
-            document.getElementById('rx-id').value = '';
-            document.getElementById('rx-name').value = '';
-            document.getElementById('rx-dosage').value = '';
-            document.getElementById('rx-freq').value = '';
-            document.getElementById('rx-pills').value = '30';
-            document.getElementById('rx-threshold').value = '7';
-            document.getElementById('rx-notes').value = '';
-            document.getElementById('rx-modal-title').innerText = 'Add New Prescription';
-
+            document.getElementById('prescriptionModal').classList.remove('hidden');
             if (rxId) {
-                const rx = currentUser.prescriptions.find(p => p.id === rxId);
+                document.getElementById('prescriptionModalTitle').innerText = 'Edit Prescription';
+                const rx = appData.prescriptions.find(p => p.id === rxId);
                 if (rx) {
-                    document.getElementById('rx-id').value = rx.id;
-                    document.getElementById('rx-name').value = rx.name;
-                    document.getElementById('rx-dosage').value = rx.dosage;
-                    document.getElementById('rx-freq').value = rx.frequency;
-                    document.getElementById('rx-pills').value = rx.pillsRemaining;
-                    document.getElementById('rx-threshold').value = rx.threshold;
-                    document.getElementById('rx-notes').value = rx.notes;
-                    document.getElementById('rx-modal-title').innerText = 'Edit Prescription';
+                    document.getElementById('rxId').value = rx.id;
+                    document.getElementById('rxName').value = rx.name;
+                    document.getElementById('rxDosage').value = rx.dosage;
+                    document.getElementById('rxFrequency').value = rx.frequency;
+                    document.getElementById('rxRemaining').value = rx.remaining;
+                    document.getElementById('rxDoctor').value = rx.doctor || '';
+                    document.getElementById('rxPharmacy').value = rx.pharmacy || '';
                 }
+            } else {
+                document.getElementById('prescriptionModalTitle').innerText = 'Add Prescription';
+                document.getElementById('rxId').value = '';
+                document.getElementById('rxName').value = '';
+                document.getElementById('rxDosage').value = '';
+                document.getElementById('rxFrequency').value = '';
+                document.getElementById('rxRemaining').value = '30';
+                document.getElementById('rxDoctor').value = '';
+                document.getElementById('rxPharmacy').value = '';
             }
-            document.getElementById('modal-prescription').classList.remove('hidden');
         }
 
         function closePrescriptionModal() {
-            document.getElementById('modal-prescription').classList.add('hidden');
+            document.getElementById('prescriptionModal').classList.add('hidden');
         }
 
-        function savePrescription(e) {
-            e.preventDefault();
-            const id = document.getElementById('rx-id').value;
-            const name = document.getElementById('rx-name').value;
-            const dosage = document.getElementById('rx-dosage').value;
-            const frequency = document.getElementById('rx-freq').value;
-            const pillsRemaining = parseInt(document.getElementById('rx-pills').value);
-            const threshold = parseInt(document.getElementById('rx-threshold').value);
-            const notes = document.getElementById('rx-notes').value;
+        function handleSavePrescription(event) {
+            event.preventDefault();
+            const id = document.getElementById('rxId').value;
+            const name = document.getElementById('rxName').value;
+            const dosage = document.getElementById('rxDosage').value;
+            const frequency = document.getElementById('rxFrequency').value;
+            const remaining = parseInt(document.getElementById('rxRemaining').value);
+            const doctor = document.getElementById('rxDoctor').value;
+            const pharmacy = document.getElementById('rxPharmacy').value;
 
             if (id) {
-                const rx = currentUser.prescriptions.find(p => p.id === id);
+                const rx = appData.prescriptions.find(p => p.id == id);
                 if (rx) {
                     rx.name = name;
                     rx.dosage = dosage;
                     rx.frequency = frequency;
-                    rx.pillsRemaining = pillsRemaining;
-                    rx.threshold = threshold;
-                    rx.notes = notes;
+                    rx.remaining = remaining;
+                    rx.doctor = doctor;
+                    rx.pharmacy = pharmacy;
                 }
             } else {
                 const newRx = {
-                    id: 'rx-' + Date.now(),
-                    name, dosage, frequency, pillsRemaining, threshold, notes
+                    id: Date.now(),
+                    name, dosage, frequency, remaining, doctor, pharmacy
                 };
-                currentUser.prescriptions.push(newRx);
+                appData.prescriptions.push(newRx);
             }
 
             saveUserData();
             closePrescriptionModal();
+            refreshAllViews();
+            showNotification('Prescription saved successfully.', 'success');
         }
 
-        function editPrescription(rxId) {
-            openPrescriptionModal(rxId);
-        }
-
-        function deletePrescription(rxId) {
-            currentUser.prescriptions = currentUser.prescriptions.filter(p => p.id !== rxId);
-            saveUserData();
-        }
-
-        function refillPrescription(rxId) {
-            const rx = currentUser.prescriptions.find(p => p.id === rxId);
+        function refillPrescription(id) {
+            const rx = appData.prescriptions.find(p => p.id === id);
             if (rx) {
-                rx.pillsRemaining += 30;
+                rx.remaining += 30;
                 saveUserData();
-                showModal("Prescription Refilled", `Added 30 pills to ${rx.name}. New total supply: ${rx.pillsRemaining} pills.`, "fa-solid fa-circle-check");
+                refreshAllViews();
+                showNotification(`Refilled ${rx.name}! +30 pills added.`, 'success');
             }
         }
 
-        // --- VITALS / BLOOD PRESSURE TAB ---
-        function renderVitals() {
-            const tbody = document.getElementById('vitals-table-body');
-            let html = '';
+        function deletePrescription(id) {
+            if (confirm('Delete this prescription?')) {
+                appData.prescriptions = appData.prescriptions.filter(p => p.id !== id);
+                saveUserData();
+                refreshAllViews();
+                showNotification('Prescription deleted.', 'info');
+            }
+        }
 
-            if (currentUser.vitals.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">No blood pressure readings logged yet.</td></tr>`;
+        function renderPrescriptionsTable() {
+            const tbody = document.getElementById('prescriptionsTableBody');
+            tbody.innerHTML = '';
+
+            if (appData.prescriptions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 text-xs">No prescriptions recorded yet. Click "Add Prescription" above.</td></tr>`;
                 return;
             }
 
-            // Sort descending by date
-            const sortedVitals = [...currentUser.vitals].sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            sortedVitals.forEach(v => {
-                const dObj = new Date(v.date);
-                const dateStr = dObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                let cat = "Normal";
-                let badgeClass = "bg-teal-500/10 text-teal-400 border-teal-500/20";
-                if (v.sys >= 140 || v.dia >= 90) {
-                    cat = "High Stage 2";
-                    badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-                } else if ((v.sys >= 130 && v.sys <= 139) || (v.dia >= 80 && v.dia <= 89)) {
-                    cat = "High Stage 1";
-                    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                } else if (v.sys < 120 && v.dia < 80) {
-                    cat = "Optimal";
-                    badgeClass = "bg-teal-500/10 text-teal-400 border-teal-500/20";
-                } else {
-                    cat = "Elevated";
-                    badgeClass = "bg-amber-500/10 text-amber-300 border-amber-500/20";
-                }
-
-                html += `
-                    <tr class="hover:bg-slate-900/50 transition">
-                        <td class="py-3 px-2 font-medium text-white">${dateStr}</td>
-                        <td class="py-3 px-2 font-bold text-teal-400">${v.sys}</td>
-                        <td class="py-3 px-2 font-bold text-indigo-400">${v.dia}</td>
-                        <td class="py-3 px-2">${v.pulse || '--'} bpm</td>
-                        <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeClass}">${cat}</span></td>
-                        <td class="py-3 px-2 text-right">
-                            <button onclick="deleteVitals('${v.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+            appData.prescriptions.forEach(rx => {
+                const lowSupply = rx.remaining <= 7;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-pills text-medical-600"></i> ${rx.name}
+                        </td>
+                        <td class="py-3 px-4 text-slate-600">${rx.dosage}</td>
+                        <td class="py-3 px-4 text-slate-600">${rx.frequency}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${lowSupply ? 'bg-amber-100 text-amber-800' : 'bg-medical-50 text-medical-700'}">
+                                ${rx.remaining} pills ${lowSupply ? '(Low)' : ''}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600 text-xs">
+                            <div>${rx.doctor || 'N/A'}</div>
+                            <div class="text-slate-400">${rx.pharmacy || ''}</div>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-2">
+                            <button onclick="refillPrescription(${rx.id})" title="Refill 30 pills" class="text-medical-600 hover:text-medical-800 text-xs font-semibold px-2 py-1 bg-medical-50 rounded">Refill</button>
+                            <button onclick="openPrescriptionModal(${rx.id})" class="text-slate-600 hover:text-slate-900 text-xs px-2 py-1 bg-slate-100 rounded">Edit</button>
+                            <button onclick="deletePrescription(${rx.id})" class="text-rose-600 hover:text-rose-800 text-xs px-2 py-1 bg-rose-50 rounded">Delete</button>
                         </td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html;
         }
 
-        function openVitalsModal() {
-            // Set current datetime default
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('bp-date').value = now.toISOString().slice(0,16);
-            document.getElementById('bp-sys').value = '';
-            document.getElementById('bp-dia').value = '';
-            document.getElementById('bp-pulse').value = '';
-            document.getElementById('modal-vitals').classList.remove('hidden');
-        }
+        // Blood Pressure Management
+        function handleSaveBP(event) {
+            event.preventDefault();
+            const systolic = parseInt(document.getElementById('bpSystolic').value);
+            const diastolic = parseInt(document.getElementById('bpDiastolic').value);
+            const pulse = parseInt(document.getElementById('bpPulse').value) || 72;
+            const date = document.getElementById('bpDate').value || new Date().toISOString().slice(0, 16);
 
-        function closeVitalsModal() {
-            document.getElementById('modal-vitals').classList.add('hidden');
-        }
+            let category = 'Normal';
+            if (systolic >= 140 || diastolic >= 90) category = 'High (Stage 2)';
+            else if ((systolic >= 130 && systolic <= 139) || (diastolic >= 80 && diastolic <= 89)) category = 'High (Stage 1)';
+            else if ((systolic >= 120 && systolic <= 129) && diastolic < 80) category = 'Elevated';
 
-        function saveVitals(e) {
-            e.preventDefault();
-            const sys = parseInt(document.getElementById('bp-sys').value);
-            const dia = parseInt(document.getElementById('bp-dia').value);
-            const pulse = document.getElementById('bp-pulse').value ? parseInt(document.getElementById('bp-pulse').value) : null;
-            const date = document.getElementById('bp-date').value;
-
-            const newRecord = {
-                id: 'v-' + Date.now(),
-                sys, dia, pulse, date
+            const newBP = {
+                id: Date.now(),
+                date, systolic, diastolic, pulse, category
             };
 
-            currentUser.vitals.push(newRecord);
+            appData.bloodPressure.push(newBP);
             saveUserData();
-            closeVitalsModal();
-            renderBpChart();
+            document.getElementById('bpForm').reset();
+            document.getElementById('bpDate').value = new Date().toISOString().slice(0, 16);
+            refreshAllViews();
+            showNotification('Blood pressure reading saved!', 'success');
         }
 
-        function deleteVitals(vId) {
-            currentUser.vitals = currentUser.vitals.filter(v => v.id !== vId);
+        function deleteBP(id) {
+            appData.bloodPressure = appData.bloodPressure.filter(b => b.id !== id);
             saveUserData();
-            renderBpChart();
+            refreshAllViews();
+            showNotification('BP record removed.', 'info');
         }
 
-        function renderBpChart() {
-            const ctx = document.getElementById('bpChart').getContext('2d');
-            
-            // Sort ascending by date for chart chronological order
-            const sorted = [...currentUser.vitals].sort((a,b) => new Date(a.date) - new Date(b.date));
-            
-            const labels = sorted.map(v => new Date(v.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-            const sysData = sorted.map(v => v.sys);
-            const diaData = sorted.map(v => v.dia);
+        function renderBPTable() {
+            const tbody = document.getElementById('bpTableBody');
+            tbody.innerHTML = '';
 
+            if (appData.bloodPressure.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 text-xs">No blood pressure readings recorded yet.</td></tr>`;
+                return;
+            }
+
+            const sorted = [...appData.bloodPressure].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            sorted.forEach(bp => {
+                const dateStr = new Date(bp.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                let badgeColor = 'bg-medical-50 text-medical-700';
+                if (bp.category.includes('High')) badgeColor = 'bg-rose-50 text-rose-700 font-bold';
+                else if (bp.category === 'Elevated') badgeColor = 'bg-amber-50 text-amber-700 font-bold';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 text-slate-700">${dateStr}</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">${bp.systolic} mmHg</td>
+                        <td class="py-3 px-4 font-bold text-slate-900">${bp.diastolic} mmHg</td>
+                        <td class="py-3 px-4 text-slate-600">${bp.pulse} bpm</td>
+                        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs ${badgeColor}">${bp.category}</span></td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="deleteBP(${bp.id})" class="text-rose-600 hover:text-rose-800 text-xs px-2 py-1 bg-rose-50 rounded">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderBPChart() {
+            const canvas = document.getElementById('bpChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
             if (bpChartInstance) {
                 bpChartInstance.destroy();
             }
 
+            const sorted = [...appData.bloodPressure].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const labels = sorted.map(b => new Date(b.date).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }));
+            const systolicData = sorted.map(b => b.systolic);
+            const diastolicData = sorted.map(b => b.diastolic);
+
             bpChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels.length > 0 ? labels : ['No Data'],
+                    labels: labels.length ? labels : ['No Data'],
                     datasets: [
                         {
-                            label: 'Systolic',
-                            data: sysData.length > 0 ? sysData : [0],
-                            borderColor: '#14b8a6',
-                            backgroundColor: 'rgba(20, 184, 166, 0.1)',
-                            borderWidth: 3,
+                            label: 'Systolic (mmHg)',
+                            data: systolicData.length ? systolicData : [0],
+                            borderColor: '#e11d48',
+                            backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                            borderWidth: 2,
                             tension: 0.3,
-                            fill: true,
-                            pointBackgroundColor: '#14b8a6'
+                            fill: true
                         },
                         {
-                            label: 'Diastolic',
-                            data: diaData.length > 0 ? diaData : [0],
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            borderWidth: 3,
+                            label: 'Diastolic (mmHg)',
+                            data: diastolicData.length ? diastolicData : [0],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 2,
                             tension: 0.3,
-                            fill: true,
-                            pointBackgroundColor: '#6366f1'
+                            fill: true
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
                     scales: {
-                        x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
-                        },
                         y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                            beginAtZero: false,
+                            min: 50,
+                            max: 200
                         }
                     }
                 }
             });
         }
 
-        // --- APPOINTMENTS TAB ---
-        function renderAppointments() {
-            const grid = document.getElementById('appointments-grid');
-            let html = '';
-
-            if (currentUser.appointments.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No appointments scheduled. Click 'Schedule Appointment' to add one.</div>`;
-                return;
-            }
-
-            const sortedApps = [...currentUser.appointments].sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
-
-            sortedApps.forEach(app => {
-                const dObj = new Date(app.datetime);
-                const dateStr = dObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                html += `
-                    <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <span class="text-[10px] uppercase font-semibold text-indigo-400 tracking-wider">Scheduled Visit</span>
-                                    <h3 class="font-bold text-white text-base">${app.doctor}</h3>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <button onclick="editAppointment('${app.id}')" class="text-slate-400 hover:text-white p-1.5 transition text-xs"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="deleteAppointment('${app.id}')" class="text-slate-400 hover:text-rose-400 p-1.5 transition text-xs"><i class="fa-solid fa-trash"></i></button>
-                                </div>
-                            </div>
-                            <div class="space-y-2 mb-4 text-xs">
-                                <p class="text-teal-400 font-semibold"><i class="fa-regular fa-calendar mr-1.5"></i> ${dateStr}</p>
-                                <p class="text-slate-300"><strong class="text-slate-400">Purpose:</strong> ${app.reason}</p>
-                                <p class="text-slate-300"><strong class="text-slate-400">Location:</strong> ${app.location || 'Not specified'}</p>
-                                <p class="text-slate-300"><strong class="text-slate-400">Questions/Notes:</strong> ${app.notes || 'None'}</p>
-                            </div>
-                        </div>
-                        <div class="pt-3 border-t border-slate-900 flex items-center justify-between">
-                            <span class="text-[10px] bg-slate-900 border border-slate-800 text-slate-400 px-2.5 py-1 rounded-lg">ID: ${app.id.slice(-4)}</span>
-                            <span class="text-xs text-indigo-400 font-medium"><i class="fa-solid fa-bell mr-1"></i> Reminder Active</span>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
-        }
-
-        function openAppointmentModal(appId = null) {
-            document.getElementById('app-id').value = '';
-            document.getElementById('app-doctor').value = '';
-            document.getElementById('app-reason').value = '';
-            document.getElementById('app-location').value = '';
-            document.getElementById('app-notes').value = '';
-            
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('app-datetime').value = now.toISOString().slice(0,16);
-
-            if (appId) {
-                const app = currentUser.appointments.find(a => a.id === appId);
-                if (app) {
-                    document.getElementById('app-id').value = app.id;
-                    document.getElementById('app-doctor').value = app.doctor;
-                    document.getElementById('app-reason').value = app.reason;
-                    document.getElementById('app-location').value = app.location;
-                    document.getElementById('app-notes').value = app.notes;
-                    document.getElementById('app-datetime').value = app.datetime;
-                }
-            }
-            document.getElementById('modal-appointment').classList.remove('hidden');
+        // Appointments Management
+        function openAppointmentModal() {
+            document.getElementById('appointmentModal').classList.remove('hidden');
+            document.getElementById('apptDate').value = new Date().toISOString().slice(0, 16);
         }
 
         function closeAppointmentModal() {
-            document.getElementById('modal-appointment').classList.add('hidden');
+            document.getElementById('appointmentModal').classList.add('hidden');
         }
 
-        function saveAppointment(e) {
-            e.preventDefault();
-            const id = document.getElementById('app-id').value;
-            const doctor = document.getElementById('app-doctor').value;
-            const reason = document.getElementById('app-reason').value;
-            const datetime = document.getElementById('app-datetime').value;
-            const location = document.getElementById('app-location').value;
-            const notes = document.getElementById('app-notes').value;
-
-            if (id) {
-                const app = currentUser.appointments.find(a => a.id === id);
-                if (app) {
-                    app.doctor = doctor;
-                    app.reason = reason;
-                    app.datetime = datetime;
-                    app.location = location;
-                    app.notes = notes;
-                }
-            } else {
-                currentUser.appointments.push({
-                    id: 'app-' + Date.now(),
-                    doctor, reason, datetime, location, notes
-                });
-            }
-
+        function handleSaveAppointment(event) {
+            event.preventDefault();
+            const newAppt = {
+                id: Date.now(),
+                doctor: document.getElementById('apptDoctor').value,
+                reason: document.getElementById('apptReason').value,
+                date: document.getElementById('apptDate').value,
+                location: document.getElementById('apptLocation').value
+            };
+            appData.appointments.push(newAppt);
             saveUserData();
             closeAppointmentModal();
+            refreshAllViews();
+            showNotification('Appointment scheduled.', 'success');
         }
 
-        function editAppointment(appId) {
-            openAppointmentModal(appId);
-        }
-
-        function deleteAppointment(appId) {
-            currentUser.appointments = currentUser.appointments.filter(a => a.id !== appId);
+        function deleteAppointment(id) {
+            appData.appointments = appData.appointments.filter(a => a.id !== id);
             saveUserData();
+            refreshAllViews();
+            showNotification('Appointment removed.', 'info');
         }
 
-        // --- CONTACTS TAB ---
-        function renderContacts() {
-            const grid = document.getElementById('contacts-grid');
-            let html = '';
+        function renderAppointmentsList() {
+            const container = document.getElementById('appointmentsList');
+            container.innerHTML = '';
 
-            if (currentUser.contacts.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No contacts saved. Click 'Add Contact' to record physicians or pharmacies.</div>`;
+            if (appData.appointments.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No upcoming doctor appointments recorded.</p>`;
                 return;
             }
 
-            currentUser.contacts.forEach(c => {
-                html += `
-                    <div class="bg-slate-950 border ${c.isPrimary ? 'border-indigo-500/40' : 'border-slate-800/80'} rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <span class="text-[10px] uppercase font-semibold ${c.isPrimary ? 'text-indigo-400' : 'text-teal-400'} tracking-wider">${c.role}</span>
-                                    <h3 class="font-bold text-white text-base">${c.name}</h3>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <button onclick="deleteContact('${c.id}')" class="text-slate-400 hover:text-rose-400 p-1.5 transition text-xs"><i class="fa-solid fa-trash"></i></button>
-                                </div>
+            const sorted = [...appData.appointments].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            sorted.forEach(appt => {
+                const dateStr = new Date(appt.date).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' });
+                container.innerHTML += `
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-3 text-xs">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                <i class="fa-solid fa-calendar-day"></i>
                             </div>
-                            <div class="space-y-2 mb-4 text-xs">
-                                <p class="text-slate-300 font-medium"><i class="fa-solid fa-phone mr-1.5 text-teal-400"></i> ${c.phone}</p>
-                                <p class="text-slate-300"><i class="fa-solid fa-location-dot mr-1.5 text-slate-500"></i> ${c.address || 'No address listed'}</p>
+                            <div>
+                                <h5 class="font-bold text-slate-900 text-sm">${appt.doctor}</h5>
+                                <p class="text-slate-600 font-medium">${appt.reason}</p>
+                                <p class="text-blue-700 font-semibold mt-1"><i class="fa-solid fa-clock mr-1"></i> ${dateStr}</p>
+                                ${appt.location ? `<p class="text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i> ${appt.location}</p>` : ''}
                             </div>
                         </div>
-                        <div class="pt-3 border-t border-slate-900 flex items-center justify-between">
-                            ${c.isPrimary ? '<span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-lg font-medium">Primary Emergency Contact</span>' : '<span class="text-[10px] text-slate-500">Standard Contact</span>'}
-                            <a href="tel:${c.phone}" class="bg-slate-900 hover:bg-slate-800 text-teal-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-slate-800 flex items-center gap-1">
-                                <i class="fa-solid fa-phone-flip text-[10px]"></i> Call
-                            </a>
-                        </div>
+                        <button onclick="deleteAppointment(${appt.id})" class="text-rose-600 hover:text-rose-800 p-1"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 `;
             });
-            grid.innerHTML = html;
         }
 
+        // Contacts Management
         function openContactModal() {
-            document.getElementById('contact-name').value = '';
-            document.getElementById('contact-role').value = '';
-            document.getElementById('contact-phone').value = '';
-            document.getElementById('contact-address').value = '';
-            document.getElementById('contact-is-primary').checked = false;
-            document.getElementById('modal-contact').classList.remove('hidden');
+            document.getElementById('contactModal').classList.remove('hidden');
         }
 
         function closeContactModal() {
-            document.getElementById('modal-contact').classList.add('hidden');
+            document.getElementById('contactModal').classList.add('hidden');
         }
 
-        function saveContact(e) {
-            e.preventDefault();
-            const name = document.getElementById('contact-name').value;
-            const role = document.getElementById('contact-role').value;
-            const phone = document.getElementById('contact-phone').value;
-            const address = document.getElementById('contact-address').value;
-            const isPrimary = document.getElementById('contact-is-primary').checked;
-
-            if (isPrimary) {
-                currentUser.contacts.forEach(c => c.isPrimary = false);
-            }
-
-            currentUser.contacts.push({
-                id: 'c-' + Date.now(),
-                name, role, phone, address, isPrimary
-            });
-
+        function handleSaveContact(event) {
+            event.preventDefault();
+            const newContact = {
+                id: Date.now(),
+                name: document.getElementById('contactName').value,
+                role: document.getElementById('contactRole').value,
+                phone: document.getElementById('contactPhone').value,
+                notes: document.getElementById('contactNotes').value
+            };
+            appData.contacts.push(newContact);
             saveUserData();
             closeContactModal();
+            refreshAllViews();
+            showNotification('Contact added.', 'success');
         }
 
-        function deleteContact(cId) {
-            currentUser.contacts = currentUser.contacts.filter(c => c.id !== cId);
+        function deleteContact(id) {
+            appData.contacts = appData.contacts.filter(c => c.id !== id);
             saveUserData();
+            refreshAllViews();
+            showNotification('Contact removed.', 'info');
         }
 
-        // --- HEALTH NOTES TAB ---
-        function renderNotes() {
-            const grid = document.getElementById('notes-grid');
-            let html = '';
+        function renderContactsList() {
+            const container = document.getElementById('contactsList');
+            container.innerHTML = '';
 
-            if (currentUser.notes.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-sm">No health notes recorded. Click 'New Note' to jot down symptoms or questions as you think of them.</div>`;
+            if (appData.contacts.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No emergency or medical contacts saved yet.</p>`;
                 return;
             }
 
-            currentUser.notes.forEach(note => {
-                html += `
-                    <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <span class="text-[10px] text-slate-500">${note.date}</span>
-                                    <h3 class="font-bold text-white text-base">${note.title}</h3>
-                                </div>
-                                <button onclick="deleteNote('${note.id}')" class="text-slate-400 hover:text-rose-400 p-1.5 transition text-xs"><i class="fa-solid fa-trash"></i></button>
+            appData.contacts.forEach(c => {
+                container.innerHTML += `
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-3 text-xs">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-medical-50 text-medical-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                <i class="fa-solid fa-user-doctor"></i>
                             </div>
-                            <p class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap mb-4">${note.body}</p>
+                            <div>
+                                <h5 class="font-bold text-slate-900 text-sm">${c.name}</h5>
+                                <p class="text-medical-700 font-medium">${c.role}</p>
+                                <p class="text-slate-600 font-semibold mt-1"><i class="fa-solid fa-phone mr-1"></i> ${c.phone}</p>
+                                ${c.notes ? `<p class="text-slate-400 mt-0.5">${c.notes}</p>` : ''}
+                            </div>
                         </div>
-                        <div class="pt-3 border-t border-slate-900 flex justify-end">
-                            <span class="text-[10px] bg-slate-900 border border-slate-800 text-teal-400 px-2.5 py-1 rounded-lg">Idea / Symptom Note</span>
+                        <button onclick="deleteContact(${c.id})" class="text-rose-600 hover:text-rose-800 p-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        // Health Notes / Ideas
+        function saveQuickNote() {
+            const text = document.getElementById('quickNoteInput').value.trim();
+            if (!text) {
+                alert('Please enter a note description.');
+                return;
+            }
+            const newNote = {
+                id: Date.now(),
+                title: 'Quick Note / Question',
+                date: new Date().toISOString().slice(0, 10),
+                content: text
+            };
+            appData.notes.push(newNote);
+            saveUserData();
+            document.getElementById('quickNoteInput').value = '';
+            refreshAllViews();
+            showNotification('Health note added successfully.', 'success');
+        }
+
+        function addFullHealthNote() {
+            const title = document.getElementById('newNoteTitleInput').value.trim() || 'Health Observation';
+            const content = prompt('Enter note details / symptoms / questions:');
+            if (!content) return;
+
+            const newNote = {
+                id: Date.now(),
+                title,
+                date: new Date().toISOString().slice(0, 10),
+                content
+            };
+            appData.notes.push(newNote);
+            saveUserData();
+            document.getElementById('newNoteTitleInput').value = '';
+            refreshAllViews();
+            showNotification('Health note saved.', 'success');
+        }
+
+        function deleteHealthNote(id) {
+            appData.notes = appData.notes.filter(n => n.id !== id);
+            saveUserData();
+            refreshAllViews();
+            showNotification('Note deleted.', 'info');
+        }
+
+        function renderHealthNotes() {
+            const container = document.getElementById('healthNotesList');
+            container.innerHTML = '';
+
+            if (appData.notes.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6 col-span-2">No health notes or ideas recorded yet.</p>`;
+                return;
+            }
+
+            appData.notes.forEach(n => {
+                container.innerHTML += `
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between text-xs shadow-sm">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h5 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                    <i class="fa-solid fa-note-sticky text-amber-500"></i> ${n.title}
+                                </h5>
+                                <span class="text-slate-400 text-[10px]">${n.date}</span>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed mb-4">${n.content}</p>
+                        </div>
+                        <div class="flex justify-end pt-2 border-t border-slate-200">
+                            <button onclick="deleteHealthNote(${n.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete Note</button>
                         </div>
                     </div>
                 `;
             });
-            grid.innerHTML = html;
         }
 
-        function openNoteModal() {
-            document.getElementById('note-title').value = '';
-            document.getElementById('note-body').value = '';
-            document.getElementById('modal-note').classList.remove('hidden');
+        // Recovery Settings
+        function updateAccountPassword() {
+            const newP = document.getElementById('secNewPassword').value;
+            if (!newP) {
+                alert('Please enter a new password.');
+                return;
+            }
+            localStorage.setItem('securemed_pass_' + currentUser, newP);
+            document.getElementById('secNewPassword').value = '';
+            showNotification('Password successfully updated!', 'success');
         }
 
-        function closeNoteModal() {
-            document.getElementById('modal-note').classList.add('hidden');
-        }
-
-        function saveNote(e) {
-            e.preventDefault();
-            const title = document.getElementById('note-title').value;
-            const body = document.getElementById('note-body').value;
-
-            currentUser.notes.unshift({
-                id: 'n-' + Date.now(),
-                title,
-                body,
-                date: new Date().toISOString().split('T')[0]
-            });
-
+        function saveRecoveryMethods() {
+            const email = document.getElementById('secRecoveryEmail').value.trim();
+            const phone = document.getElementById('secRecoveryPhone').value.trim();
+            appData.recovery = { email, phone };
             saveUserData();
-            closeNoteModal();
+            showNotification('Recovery methods updated successfully.', 'success');
         }
 
-        function deleteNote(nId) {
-            currentUser.notes = currentUser.notes.filter(n => n.id !== nId);
-            saveUserData();
+        // Notification toast helper
+        function showNotification(message, type = 'success') {
+            const toast = document.createElement('div');
+            let bg = 'bg-slate-900 text-white';
+            if (type === 'success') bg = 'bg-medical-700 text-white';
+            if (type === 'info') bg = 'bg-blue-600 text-white';
+
+            toast.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-xl text-xs font-bold transition-all transform translate-y-2 opacity-0 flex items-center gap-2 ${bg}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 100);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
     </script>
 </body>
